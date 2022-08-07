@@ -131,9 +131,9 @@ function generate_thumbnails(byMonth, geometry) {
 
     image = image.visualize({ //convert each frame to RGB image explicitly since it is a 1 band image
       forceRgbOutput: true,
-      min: 0,
+      min: -1,
       max: 1,
-      palette: ['white', 'steelblue', 'green']
+      palette: ['red', 'orange', 'white', 'steelblue', 'green']
     }).set({ 'label': timeStamp }); // set a property called label for each image
 
     var annotated = text.annotateImage(image, {}, geometry, annotations); // create a new image with the label overlayed using gena's package
