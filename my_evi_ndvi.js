@@ -16,7 +16,7 @@ var geometry =
 //var endDate = ee.Date('2020-12-31');
 
 var startDate = '2017-04-01';
-var endDate = ee.Date('2021-07-31');
+var endDate = ee.Date('2022-05-31');
 
 
 //var areaPerPixel = ee.Image.pixelArea();
@@ -53,13 +53,26 @@ function keepFieldPixel(image) {
     return image.updateMask(mask).selfMask();
 }
 
+function getNDVI(image) {
+  //  (NIR - red) / (NIR + red)
+  var NDVI = image.expression(
+      '(NIR - RED) / (NIR +  RED)', {
+          'NIR': image.select('B8').divide(10000),
+          'RED': image.select('B4').divide(10000)
+      }).rename("NDVI")
+
+  image = image.addBands(NDVI)
+
+  return(image)
+}
+
 function getEVI(image) {
     // Compute the EVI using an expression.
     var EVI = image.expression(
         '2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
-            'NIR': image.select('B8_mode').divide(10000),
-            'RED': image.select('B4_mode').divide(10000),
-            'BLUE': image.select('B2_mode').divide(10000)
+            'NIR': image.select('B8').divide(10000),
+            'RED': image.select('B4').divide(10000),
+            'BLUE': image.select('B2').divide(10000)
         }).rename("EVI")
 
     image = image.addBands(EVI)
@@ -68,19 +81,21 @@ function getEVI(image) {
 }
     
 
-var step = 3;
+var step = 1;
 
 var nMonths = ee.Number(endDate.difference(ee.Date(startDate), 'month')).subtract(1).round();
 
 
-function generate_ndvi_collection(geometry) {
+function generate_ndvi_evi_collection(geometry) {
     var s2_sr = ee.ImageCollection('COPERNICUS/S2_SR')
                   .filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', 20);
     
     s2_sr = s2_sr.map(maskS2clouds);
     s2_sr = s2_sr.map(keepFieldPixel);
-
-
+    
+    s2_sr = s2_sr.map(getNDVI);
+    s2_sr = s2_sr.map(getEVI);
+    
   var byMonth = ee.ImageCollection(
     ee.List.sequence(0, nMonths, step).map(function (n) {
       
@@ -89,51 +104,21 @@ function generate_ndvi_collection(geometry) {
       
       var image = s2_sr.filterDate(ini, end)
       .filterBounds(geometry)
-      .select(["B8", "B4"])
-      .reduce(ee.Reducer.mode());
+      .select(["NDVI", "EVI"])
+      .reduce(ee.Reducer.mean());
 
-      var ndvi = ee.Algorithms.If(image.bandNames().length().gt(0), 
-      image.normalizedDifference(['B8_mode', 'B4_mode']).rename('NDVI').set('system:time_start', ini),
-      ee.Image().addBands(-1).rename(["label_mode", "constant"]).select("label_mode").eq(-1).selfMask().set('system:time_start', ini))
+      var ndvi_evi = ee.Algorithms.If(image.bandNames().length().gt(0), 
+      image.set('system:time_start', ini),
+      ee.Image().addBands(0).rename(["NDVI_mean", "EVI_mean"]).selfMask().set('system:time_start', ini))
 
-      return ndvi;
+      return ndvi_evi;
     })
   );
 
   return byMonth;
 }
 
-function generate_evi_collection(geometry) {
-    var s2_sr = ee.ImageCollection('COPERNICUS/S2_SR')
-                  .filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', 20);
-    
-    s2_sr = s2_sr.map(maskS2clouds);
-    s2_sr = s2_sr.map(keepFieldPixel);
 
-
-  var byMonth = ee.ImageCollection(
-    ee.List.sequence(0, nMonths, step).map(function (n) {
-      
-      var ini = ee.Date(startDate).advance(n, 'month');
-      var end = ini.advance(step, 'month');
-      
-      var image = s2_sr.filterDate(ini, end)
-      .filterBounds(geometry)
-      .select(["B8", "B4", "B2"])
-      .reduce(ee.Reducer.mode());
-
-      var evi = ee.Algorithms.If(image.bandNames().length().gt(0), 
-      getEVI(image).select(["EVI"]).set('system:time_start', ini),
-      ee.Image().addBands(-1).rename(["label_mode", "constant"]).select("label_mode").eq(-1).selfMask().set('system:time_start', ini))
-
-      //var ndvi = image.normalizedDifference(['B8_mode', 'B4_mode']).rename('NDVI').set('system:time_start', ini);
-
-      return evi;
-    })
-  );
-
-  return byMonth;
-}
 
 
 function generate_chart(byMonth, geometry, key) {
@@ -144,7 +129,8 @@ function generate_chart(byMonth, geometry, key) {
     reducer: ee.Reducer.mean(),
 
   }).setOptions({
-    vAxis: { title: key + ' over time' }
+    vAxis: { title: 'Vegetation over time' },
+    colors: ['e37d05', '1d6b99'],
   })
   return chart;
 }
@@ -174,9 +160,9 @@ function generate_thumbnails(byMonth, geometry) {
 
     image = image.visualize({ //convert each frame to RGB image explicitly since it is a 1 band image
       forceRgbOutput: true,
-      min: -1,
+      min: 0,
       max: 1,
-      palette: ['red', 'orange', 'white', 'steelblue', 'green']
+      palette: ['red', 'orange', 'steelblue', 'green']
     }).set({ 'label': timeStamp }); // set a property called label for each image
 
     var annotated = text.annotateImage(image, {}, geometry, annotations); // create a new image with the label overlayed using gena's package
@@ -197,7 +183,8 @@ function control () {
   var panel = ui.Panel({
     style: { width: '400px' }
   })
-    .add(ui.Label("Use drawing tool to define a region."))
+  .add(ui.Label("Use drawing tool to define a region."))
+  
   ui.root.add(panel);
   
 
@@ -216,9 +203,11 @@ function control () {
   
   //define chart and thumbnail widgets
   var ndvi_chart;
+
+  var ndvi_label = ui.Label({value: "NDVI", style: {textAlign: "center", width: '400px', fontSize: '40px', color: '484848'}});
   var ndvi_thumbnails;
 
-  var evi_chart;
+  var evi_label = ui.Label({value: "EVI", style: {textAlign: "center", width: '400px', fontSize: '40px', color: '484848'}});
   var evi_thumbnails;
   
   //the refresh function centers the map the to selected region
@@ -229,27 +218,26 @@ function control () {
   function refresh(geometry) {
     Map.centerObject(geometry);
     panel.remove(ndvi_chart);
-    panel.remove(ndvi_thumbnails);
 
-    panel.remove(evi_chart);
+    panel.remove(ndvi_label);
+    panel.remove(ndvi_thumbnails);
+    
+    panel.remove(evi_label);
     panel.remove(evi_thumbnails);
   
-    var byMonth_ndvi = generate_ndvi_collection(geometry);
-    
-    var byMonth_evi = generate_evi_collection(geometry);
+    var byMonth_ndvi_evi = generate_ndvi_evi_collection(geometry);
 
-
-    ndvi_chart = generate_chart(byMonth_ndvi, geometry, "NDVI");
+    ndvi_chart = generate_chart(byMonth_ndvi_evi, geometry);
     panel.add(ndvi_chart);
-
-    ndvi_thumbnails = generate_thumbnails(byMonth_ndvi, geometry);
+    
+    
+    print (byMonth_ndvi_evi)
+    panel.add(ndvi_label)
+    ndvi_thumbnails = generate_thumbnails(byMonth_ndvi_evi.select(["NDVI_mean"]), geometry);
     panel.add(ndvi_thumbnails);
 
-
-    evi_chart = generate_chart(byMonth_evi, geometry, "EVI");
-    panel.add(evi_chart);
-
-    evi_thumbnails = generate_thumbnails(byMonth_evi, geometry);
+    panel.add(evi_label)
+    evi_thumbnails = generate_thumbnails(byMonth_ndvi_evi.select(["EVI_mean"]), geometry);
     panel.add(evi_thumbnails);
     
   }
