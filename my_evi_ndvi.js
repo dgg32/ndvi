@@ -121,7 +121,7 @@ function generate_ndvi_evi_collection(geometry) {
 
 
 
-function generate_chart(byMonth, geometry, key) {
+function generate_chart(byMonth, geometry) {
   var chart = ui.Chart.image.series({
     imageCollection: byMonth,
     region: geometry,
