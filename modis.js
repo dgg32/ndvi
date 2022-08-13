@@ -19,7 +19,7 @@ var startDate = '2017-04-01';
 var endDate = '2022-05-31';
 
 
-function generate_ndvi_evi_collection(geometry) {
+function generate_collection(geometry) {
    var byMonth = ee.ImageCollection('MODIS/006/MOD13A1')
     .filter(ee.Filter.date(startDate, endDate))
     .select(['NDVI', 'EVI'])
@@ -135,7 +135,7 @@ function control () {
     panel.remove(evi_label);
     panel.remove(evi_thumbnails);
   
-    var byMonth_ndvi_evi = generate_ndvi_evi_collection(geometry);
+    var byMonth_ndvi_evi = generate_collection(geometry);
 
     ndvi_chart = generate_chart(byMonth_ndvi_evi, geometry);
     panel.add(ndvi_chart);

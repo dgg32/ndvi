@@ -81,12 +81,12 @@ function getEVI(image) {
 }
     
 
-var step = 1;
+var step = 3;
 
 var nMonths = ee.Number(endDate.difference(ee.Date(startDate), 'month')).subtract(1).round();
 
 
-function generate_ndvi_evi_collection(geometry) {
+function generate_collection(geometry) {
     var s2_sr = ee.ImageCollection('COPERNICUS/S2_SR')
                   .filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', 20);
     
@@ -225,7 +225,7 @@ function control () {
     panel.remove(evi_label);
     panel.remove(evi_thumbnails);
   
-    var byMonth_ndvi_evi = generate_ndvi_evi_collection(geometry);
+    var byMonth_ndvi_evi = generate_collection(geometry);
 
     ndvi_chart = generate_chart(byMonth_ndvi_evi, geometry);
     panel.add(ndvi_chart);
