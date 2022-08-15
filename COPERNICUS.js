@@ -41,15 +41,9 @@ function keepFieldPixel(image) {
     // Select vegetation and soil pixels
     var veg = scl.eq(4); // 4 = Vegetation
     var soil = scl.eq(5); // 5 = Bare soils
-    var water = scl.eq(6);
-    // Mask if not veg or soil
-    
-    // or or and??????????????????
-    //var mask = (veg.neq(1)).or(soil.neq(1));
     
     var mask = (veg.eq(1)).or(soil.eq(1));
-    //var mask = soil.eq(1);
-    //var mask = water.neq(1);
+
     return image.updateMask(mask).selfMask();
 }
 
