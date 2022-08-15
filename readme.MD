@@ -6,7 +6,7 @@
 
   
 
-This repository contains code my article "[Monitor Vegetation with Google Earth Engine](https://towardsdatascience.com/neo4j-for-diseases-959dffb5b479)".
+This repository contains code my article "[Monitor Vegetation with Google Earth Engine](https://dgg32.medium.com/monitor-vegetation-with-google-earth-engine-909a2ad51a48)".
 
 
 
