@@ -75,7 +75,7 @@ function getEVI(image) {
 }
     
 
-var step = 3;
+var step = 1;
 
 var nMonths = ee.Number(endDate.difference(ee.Date(startDate), 'month')).subtract(1).round();
 
