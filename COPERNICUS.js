@@ -81,7 +81,7 @@ var nMonths = ee.Number(endDate.difference(ee.Date(startDate), 'month')).subtrac
 
 
 function generate_collection(geometry) {
-    var s2_sr = ee.ImageCollection('COPERNICUS/S2_SR')
+    var s2_sr = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
                   .filterMetadata('CLOUDY_PIXEL_PERCENTAGE', 'less_than', 20);
     
     s2_sr = s2_sr.map(maskS2clouds);
