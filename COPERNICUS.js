@@ -123,7 +123,7 @@ function generate_chart(byMonth, geometry) {
     reducer: ee.Reducer.mean(),
 
   }).setOptions({
-    vAxis: { title: 'Vegetation over time' },
+    vAxis: { title: 'Index intensity' },
     colors: ['e37d05', '1d6b99'],
   })
   return chart;
@@ -154,7 +154,7 @@ function generate_thumbnails(byMonth, geometry) {
 
     image = image.visualize({ //convert each frame to RGB image explicitly since it is a 1 band image
       forceRgbOutput: true,
-      min: 0,
+      min: -1,
       max: 1,
       palette: ['red', 'orange', 'steelblue', 'green']
     }).set({ 'label': timeStamp }); // set a property called label for each image
