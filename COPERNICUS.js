@@ -156,7 +156,7 @@ function generate_thumbnails(byMonth, geometry) {
       forceRgbOutput: true,
       min: -1,
       max: 1,
-      palette: ['red', 'orange', 'steelblue', 'green']
+      palette: ['red', 'orange', 'white', 'steelblue', 'green']
     }).set({ 'label': timeStamp }); // set a property called label for each image
 
     var annotated = text.annotateImage(image, {}, geometry, annotations); // create a new image with the label overlayed using gena's package
@@ -198,6 +198,8 @@ function control () {
   //define chart and thumbnail widgets
   var ndvi_chart;
 
+  var color_scale = ui.Label({value: "From -1 to 1: Red, Orange, White, Steelblue, Green", style: {textAlign: "center", width: '400px', fontSize: '15px', color: '484848'}});
+
   var ndvi_label = ui.Label({value: "NDVI", style: {textAlign: "center", width: '400px', fontSize: '40px', color: '484848'}});
   var ndvi_thumbnails;
 
@@ -213,6 +215,8 @@ function control () {
     Map.centerObject(geometry);
     panel.remove(ndvi_chart);
 
+    panel.remove(color_scale);
+
     panel.remove(ndvi_label);
     panel.remove(ndvi_thumbnails);
     
@@ -223,7 +227,7 @@ function control () {
 
     ndvi_chart = generate_chart(byMonth_ndvi_evi, geometry);
     panel.add(ndvi_chart);
-    
+    panel.add(color_scale);
     
     print (byMonth_ndvi_evi)
     panel.add(ndvi_label)
