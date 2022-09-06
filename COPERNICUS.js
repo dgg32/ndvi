@@ -102,8 +102,8 @@ function generate_collection(geometry) {
       .reduce(ee.Reducer.mean());
 
       var ndvi_evi = ee.Algorithms.If(image.bandNames().length().gt(0), 
-      image.set('system:time_start', ini),
-      ee.Image().addBands(0).rename(["NDVI_mean", "EVI_mean"]).selfMask().set('system:time_start', ini))
+      image.set('system:time_start', ini.millis()),
+      ee.Image().addBands(0).rename(["NDVI_mean", "EVI_mean"]).selfMask().set('system:time_start', ini.millis()))
 
       return ndvi_evi;
     })
@@ -129,7 +129,15 @@ function generate_chart(byMonth, geometry) {
   return chart;
 }
 
-
+var create_feature = function(img){
+    var value = img.reduceRegion(ee.Reducer.mean(), geometry, 100).select(["NDVI_mean", "EVI_mean"]);
+    
+    var ft = ee.Feature(null, {'system:time_start': img.date(), 
+                              'NDVI': value.get("NDVI_mean"),
+                              'EVI': value.get("EVI_mean")
+    });
+    return ft;
+  };
 
 
 function generate_thumbnails(byMonth, geometry) {
@@ -237,6 +245,18 @@ function control () {
     panel.add(evi_label)
     evi_thumbnails = generate_thumbnails(byMonth_ndvi_evi.select(["EVI_mean"]), geometry);
     panel.add(evi_thumbnails);
+    
+    
+    var TS = byMonth_ndvi_evi.map(create_feature);
+    
+    print (TS)
+    
+    Export.table.toDrive({
+      collection: TS, 
+      description: 'Convert', 
+      fileNamePrefix: 'copernicus_ndvi_evi', 
+      fileFormat: 'CSV'
+    });
     
   }
   

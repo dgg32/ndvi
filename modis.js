@@ -45,7 +45,15 @@ function generate_chart(byMonth, geometry) {
   return chart;
 }
 
-
+var create_feature = function(img){
+    var value = img.reduceRegion(ee.Reducer.mean(), geometry).select(["NDVI", "EVI"]);
+    
+    var ft = ee.Feature(null, {'system:time_start': img.date(), 
+                              'NDVI': value.get("NDVI"),
+                              'EVI': value.get("EVI")
+    });
+    return ft;
+  };
 
 
 function generate_thumbnails(byMonth, geometry) {
@@ -153,6 +161,17 @@ function control () {
     panel.add(evi_label)
     evi_thumbnails = generate_thumbnails(byMonth_ndvi_evi.select(["EVI"]), geometry);
     panel.add(evi_thumbnails);
+    
+    var TS = byMonth_ndvi_evi.map(create_feature);
+    
+    print (TS)
+    
+    Export.table.toDrive({
+      collection: TS, 
+      description: 'Export', 
+      fileNamePrefix: 'modis_ndvi_evi', 
+      fileFormat: 'CSV'
+    });
     
   }
   
