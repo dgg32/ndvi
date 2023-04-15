@@ -59,7 +59,7 @@ var create_feature = function(img){
 function generate_thumbnails(byMonth, geometry) {
 
   var args = {
-    crs: 'EPSG:4326',
+    //crs: 'EPSG:4326',
     dimensions: '500',
     region: geometry,
     framesPerSecond: 1
